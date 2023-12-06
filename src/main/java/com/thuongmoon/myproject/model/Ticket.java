@@ -11,8 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,9 +31,8 @@ public class Ticket implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	@MapsId
-	@OneToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "SeatStatusId")
+	@ManyToOne(fetch = FetchType.EAGER )
+	@JoinColumn(name = "seatStatus_id")
 	private SeatStatus seatStatus;
 
 	@ManyToOne(fetch = FetchType.LAZY)

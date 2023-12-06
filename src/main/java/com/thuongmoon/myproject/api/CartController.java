@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.thuongmoon.myproject.dto.CheckoutRequest;
 import com.thuongmoon.myproject.dto.CheckoutResponse;
 import com.thuongmoon.myproject.dto.ListIdBooking;
+import com.thuongmoon.myproject.dto.PaymentRequest;
 import com.thuongmoon.myproject.dto.SeatDto;
 import com.thuongmoon.myproject.dto.TicketInCart;
 import com.thuongmoon.myproject.message.ResponseMessage;
@@ -95,10 +96,33 @@ public class CartController {
 	public ResponseEntity<CheckoutResponse> addTicketBooked(@NonNull HttpServletRequest request, @RequestBody CheckoutRequest checkoutRequest) {
 		try {
 			User user = userService.getUserFromToken(request);
-			CheckoutResponse response= cartService.addTicketBooked(checkoutRequest.getIds(), checkoutRequest.isPaid(), user);
+			CheckoutResponse response= cartService.addTicketBooked(checkoutRequest, user);
 			return new ResponseEntity<CheckoutResponse>(response, HttpStatus.OK);
 		} catch (Exception e) {
 			return new ResponseEntity<CheckoutResponse>(new CheckoutResponse(null, "Something went wrong!"), HttpStatus.FAILED_DEPENDENCY);
+		}
+	}
+	
+	@PostMapping("/payment")
+	public ResponseEntity<ResponseMessage> createOrderDetail(@NonNull HttpServletRequest request, @RequestBody PaymentRequest paymentRequest) {
+		try {
+			User user = userService.getUserFromToken(request);
+			cartService.createdInvoice(paymentRequest.isPaid(), paymentRequest.getInvoiceId(), user);
+			String message = "success";
+			return new ResponseEntity<>(new ResponseMessage(message), HttpStatus.OK);
+		} catch (Exception e) {
+			String message = "error";
+			return new ResponseEntity<>(new ResponseMessage(message), HttpStatus.OK);
+		}
+	}
+	
+	@GetMapping("/payment")
+	public ResponseEntity<ResponseMessage> isInvoiceExists(@RequestParam String invoiceId) {
+		boolean temp = cartService.isInvoiceExists(invoiceId);
+		if (temp) {
+			return new ResponseEntity<ResponseMessage>(new ResponseMessage("yes"), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<ResponseMessage>(new ResponseMessage("no"), HttpStatus.OK);
 		}
 	}
 	
@@ -116,7 +140,7 @@ public class CartController {
 	
 	@GetMapping("/tickets")
 	public ResponseEntity<List<TicketInCart>> getListTicketsBeforeBook(@RequestParam(required = true) List<Long> ids) {
-		System.out.print(ids.get(0) + "dfasfsadfasdfasdfasdf\n");
+		//System.out.print(ids.get(0) + "dfasfsadfasdfasdfasdf\n");
 		try {
 			return new ResponseEntity<List<TicketInCart>>(cartService.getListTicketsBeforeBook(ids), HttpStatus.OK);
 		} catch (Exception e) {

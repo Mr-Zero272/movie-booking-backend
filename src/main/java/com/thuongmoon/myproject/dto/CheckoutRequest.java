@@ -13,5 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CheckoutRequest {
 	private List<Long> ids;
-	private boolean paid;
+	private String invoiceId;
+	private String nameInTicket;
+	private String emailInTicket;
 }

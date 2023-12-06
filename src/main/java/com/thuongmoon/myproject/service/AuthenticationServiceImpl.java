@@ -19,7 +19,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
-	
 
 	public AuthenticationServiceImpl(UserDao repository, PasswordEncoder passwordEncoder, JwtService jwtService,
 			AuthenticationManager authenticationManager) {
@@ -31,36 +30,33 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
 	@Override
 	public AuthenticationResponse register(RegisterRequest request) {
-		var user = User.builder()
-				.username(request.getUsername())
-				.email(request.getEmail())
-				.avatar(request.getAvatar())
-				.phoneNumber(request.getPhoneNumber())
-				.password(passwordEncoder.encode(request.getPassword()))
-				.role(Role.USER)
-				.build();
+		String avatar = "", phone = "";
+		if (request.getAvatar() == null || request.getAvatar().isEmpty() || request.getAvatar().isBlank()) {
+			avatar = "no_image.png";
+		} else {
+			avatar = request.getAvatar();
+		}
+
+		if (request.getPhoneNumber() == null || request.getPhoneNumber().isEmpty()
+				|| request.getPhoneNumber().isBlank()) {
+			phone = "Please update yourphone number!";
+		} else {
+			phone = request.getPhoneNumber();
+		}
+		var user = User.builder().username(request.getUsername()).email(request.getEmail()).avatar(avatar)
+				.phoneNumber(phone).password(passwordEncoder.encode(request.getPassword())).role(Role.USER).build();
 		var jwtToken = jwtService.generateToken(user);
 		repository.save(user);
-		return AuthenticationResponse.builder()
-				.token(jwtToken)
-				.message("success")
-				.build();
+		return AuthenticationResponse.builder().token(jwtToken).message("success").build();
 	}
 
 	@Override
 	public AuthenticationResponse authenticate(AuthenticationResquest request) {
-		authenticationManager.authenticate(
-				new UsernamePasswordAuthenticationToken(
-						request.getUsername(), 
-						request.getPassword()
-				)
-		);
+		authenticationManager
+				.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 		var user = repository.findByUsername(request.getUsername()).orElseThrow();
 		var jwtToken = jwtService.generateToken(user);
-		return AuthenticationResponse.builder()
-				.token(jwtToken)
-				.message("success")
-				.build();
+		return AuthenticationResponse.builder().token(jwtToken).message("success").build();
 	}
 
 }

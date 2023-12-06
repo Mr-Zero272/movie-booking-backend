@@ -12,10 +12,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TicketInCart {
+	private Long id;
 	private SeatStatus seatStatus;
 	private String movieName;
 	private String director;
 	private String imageName;
 	private String imageHorizonName;
 	private Long movieId;
+	private String nameInTicket;
+	private String emailInTicket;
 }

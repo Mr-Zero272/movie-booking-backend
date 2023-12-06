@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+//Reference from https://bezkoder.com/
 @Service
 public class FilesStorageServiceImpl implements FilesStorageService{
 	
@@ -108,9 +109,9 @@ public class FilesStorageServiceImpl implements FilesStorageService{
 	}
 
 	@Override
-	public void saveFileWithPath(Path path, MultipartFile file) {
+	public void saveFileWithPath(Path path, MultipartFile file, String newFilename) {
 		try {
-		      Files.copy(file.getInputStream(), path.resolve(file.getOriginalFilename()));
+		      Files.copy(file.getInputStream(), path.resolve(newFilename));
 		    } catch (Exception e) {
 		      if (e instanceof FileAlreadyExistsException) {
 		        throw new RuntimeException("A file of that name already exists.");

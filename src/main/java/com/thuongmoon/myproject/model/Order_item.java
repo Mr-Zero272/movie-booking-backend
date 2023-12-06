@@ -32,14 +32,15 @@ public class Order_item implements Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+	private String nameInTicket;
+	private String emailInTicket;
 
-	@MapsId
-	@OneToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "SeatStatusId")
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name = "seatStatus_id")
 	private SeatStatus seatStatus;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "oder_detail_id")
+	@JoinColumn(name = "order_detail_id")
 	private Order_detail orderDetail;
 
 	@Override

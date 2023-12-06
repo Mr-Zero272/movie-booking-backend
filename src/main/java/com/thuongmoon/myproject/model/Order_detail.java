@@ -36,6 +36,7 @@ public class Order_detail implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	private int total;
+	private String invoiceId;
 	private boolean paid;
 	private LocalDateTime checkoutAt;
 

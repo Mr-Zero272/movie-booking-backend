@@ -11,7 +11,7 @@ public interface FilesStorageService {
 
 	  public void save(MultipartFile file);
 	  
-	  public void saveFileWithPath(Path path, MultipartFile file);
+	  public void saveFileWithPath(Path path, MultipartFile file, String newFileName);
 
 	  public Resource load(String filename);
 	  

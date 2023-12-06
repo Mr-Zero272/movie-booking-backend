@@ -14,6 +14,7 @@ import com.thuongmoon.myproject.dao.OrderDetailDao;
 import com.thuongmoon.myproject.dao.OrderItemDao;
 import com.thuongmoon.myproject.dao.SeatStatusDao;
 import com.thuongmoon.myproject.dao.TicketDao;
+import com.thuongmoon.myproject.dto.CheckoutRequest;
 import com.thuongmoon.myproject.dto.CheckoutResponse;
 import com.thuongmoon.myproject.dto.SeatDto;
 import com.thuongmoon.myproject.dto.TicketInCart;
@@ -68,12 +69,17 @@ public class CartServiceImpl implements CartService {
 		List<Ticket> tickets = ticketDao.findAllTicketInCurrentCart(cart);
 		List<TicketInCart> ticketInCarts = new ArrayList<>();
 		for (Ticket ticket : tickets) {
-			ticketInCarts.add(new TicketInCart(ticket.getSeatStatus(),
+			ticketInCarts.add(new TicketInCart(
+					ticket.getId(),
+					ticket.getSeatStatus(),
 					ticket.getSeatStatus().getScreening().getMovie().getTitle(),
 					ticket.getSeatStatus().getScreening().getMovie().getDirector(),
 					ticket.getSeatStatus().getScreening().getMovie().getVerticalImage(),
 					ticket.getSeatStatus().getScreening().getMovie().getHorizontalImage(),
-					ticket.getSeatStatus().getScreening().getMovie().getId()));
+					ticket.getSeatStatus().getScreening().getMovie().getId(),
+					"",
+					""
+					));
 		}
 		return ticketInCarts;
 	}
@@ -104,46 +110,42 @@ public class CartServiceImpl implements CartService {
 
 	@Override
 	@Transactional
-	public CheckoutResponse addTicketBooked(List<Long> seatStatusIds, boolean paid, User user) {
+	public CheckoutResponse addTicketBooked(CheckoutRequest checkoutRequest, User user) {
+		System.out.println(checkoutRequest.getInvoiceId() + "dsafsdf");
 		int totalPayment = 0;
-		Order_detail orderDetail = new Order_detail();
-		LocalDateTime lt = LocalDateTime.now();
-		orderDetail.setCheckoutAt(lt);
-		orderDetail.setTotal(0);
-		orderDetail.setPaid(paid);
-		orderDetail.setUser(user);
-		orderDetailDao.save(orderDetail);
-
+		Order_detail orderDetail = orderDetailDao.findByInvoiceId(checkoutRequest.getInvoiceId()).get();
 		int totalTicketBooked = 0;
+		Cart userCart = cartDao.findCurrentActiveCartByUser(user).orElseThrow();
 		List<Long> ids = new ArrayList<>();
-		for (Long id : seatStatusIds) {
-			// delete ticket
-			Optional<Ticket> ticket = ticketDao.findById(id);
-			if (ticket.isPresent()) {
-				ticketDao.deleteById(id);
-				totalTicketBooked++;
-			}
-
+		
+		for (Long id : checkoutRequest.getIds()) {
+			System.out.println("id:" + id);
 			// save new state for that seat
 			SeatStatus seatStatus = seatStatusDao.findById(id).orElseThrow();
 			if (seatStatus.getStatus().equals(SeatStatusE.booked)) {
 				ids.add(id);
 			} else {
 				seatStatus.setStatus(SeatStatusE.booked);
-				seatStatusDao.save(seatStatus);
 				totalPayment += seatStatus.getPrice();
+				seatStatusDao.save(seatStatus);
 			}
-
+			// delete ticket
+			Optional<Ticket> ticket = ticketDao.findBySeatStatus(seatStatus, userCart);
+			if (ticket.isPresent()) {
+				ticketDao.delete(ticket.get());
+				totalTicketBooked++;
+			}
 			// add that ticket as booked
 			Order_item newTicket = new Order_item();
 			newTicket.setOrderDetail(orderDetail);
 			newTicket.setSeatStatus(seatStatus);
-
+			newTicket.setNameInTicket(checkoutRequest.getNameInTicket());
+			newTicket.setEmailInTicket(checkoutRequest.getEmailInTicket());
 			// save
 			orderItemDao.save(newTicket);
 		}
+		
 		// delete cart if there was no ticket in that cart active = false
-		Cart userCart = cartDao.findCurrentActiveCartByUser(user).orElseThrow();
 		List<Ticket> tickets = ticketDao.findAllTicketInCurrentCart(userCart);
 		if (tickets.isEmpty()) {
 			userCart.setActive(false);
@@ -187,12 +189,16 @@ public class CartServiceImpl implements CartService {
 		for (Order_detail item : orderDetails) {
 			List<Order_item> orderItems = orderItemDao.findAllBookedTickets(item);
 			for (Order_item orderItem : orderItems) {
-				ticketInCarts.add(new TicketInCart(orderItem.getSeatStatus(),
+				ticketInCarts.add(new TicketInCart(
+						orderItem.getId(),
+						orderItem.getSeatStatus(),
 						orderItem.getSeatStatus().getScreening().getMovie().getTitle(),
 						orderItem.getSeatStatus().getScreening().getMovie().getDirector(),
 						orderItem.getSeatStatus().getScreening().getMovie().getVerticalImage(),
 						orderItem.getSeatStatus().getScreening().getMovie().getHorizontalImage(),
-						orderItem.getSeatStatus().getScreening().getMovie().getId()));
+						orderItem.getSeatStatus().getScreening().getMovie().getId(),
+						orderItem.getNameInTicket(),
+						orderItem.getEmailInTicket()));
 			}
 		}
 		return ticketInCarts;
@@ -203,12 +209,14 @@ public class CartServiceImpl implements CartService {
 		List<SeatStatus> listSeats = seatStatusDao.findAllById(ids);
 		List<TicketInCart> ticketInCarts = new ArrayList<>();
 		for (SeatStatus item: listSeats) {
-			ticketInCarts.add(new TicketInCart(item, 
+			ticketInCarts.add(new TicketInCart( Long.parseLong("0"),item, 
 					item.getScreening().getMovie().getTitle(), 
 					item.getScreening().getMovie().getDirector(), 
 					item.getScreening().getMovie().getVerticalImage(), 
 					item.getScreening().getMovie().getHorizontalImage(), 
-					item.getScreening().getMovie().getId()
+					item.getScreening().getMovie().getId(),
+					"",
+					""
 					));
 		}
 		return ticketInCarts;
@@ -228,6 +236,30 @@ public class CartServiceImpl implements CartService {
 			//System.out.print("ERROR!");
 			return false;
 		}
+	}
+
+	@Override
+	public void createdInvoice(boolean paid, String invoiceId, User user) {
+		if (orderDetailDao.findByInvoiceId(invoiceId).isEmpty()) {
+			Order_detail orderDetail = new Order_detail();
+			LocalDateTime lt = LocalDateTime.now();
+			orderDetail.setCheckoutAt(lt);
+			orderDetail.setTotal(0);
+			orderDetail.setInvoiceId(invoiceId);
+			orderDetail.setPaid(paid);
+			orderDetail.setUser(user);
+			orderDetailDao.save(orderDetail);			
+		}
+	}
+
+	@Override
+	public boolean isInvoiceExists(String invoiceId) {
+		Optional<Order_detail> orderDetail = orderDetailDao.findByInvoiceId(invoiceId);
+		boolean isPaid = false;
+		if (orderDetail.isPresent()) {
+			isPaid = orderDetail.get().isPaid();
+		}
+		return isPaid;
 	}
 
 }

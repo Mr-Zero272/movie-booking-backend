@@ -1,8 +1,12 @@
 package com.thuongmoon.myproject.model;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +40,15 @@ public class SeatStatus implements Serializable {
 	@Enumerated(EnumType.STRING)
 	private SeatStatusE status;
 	private int price;
+	
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "seatStatus", orphanRemoval = true)
+	@JsonIgnore
+	private List<Ticket> tickets;
+	
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "seatStatus", orphanRemoval = true)
+	@JsonIgnore
+	private List<Order_item> order_items;
+	
 	
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "seat_id")

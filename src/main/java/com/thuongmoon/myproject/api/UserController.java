@@ -71,15 +71,19 @@ public class UserController {
 		jwt = authHeader.substring(7);
 		username = jwtService.extractUsername(jwt);
 		String fileName = file.getOriginalFilename();
+		int dotIndex = fileName.lastIndexOf(".");
+		String name = fileName.substring(0, dotIndex);
+		String extension = fileName.substring(dotIndex);
+		String newFileName = name + username + extension;
 		String message = "";
 		Path imagePath = Paths.get("uploads/images/avatars");	
 		try {
-			if(!userService.updateAvatar(username, fileName))
+			if(!userService.updateAvatar(username, newFileName))
 			{
 				message = "Something went wrong!!!";
 				return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
 			}
-			storageService.saveFileWithPath(imagePath, file);
+			storageService.saveFileWithPath(imagePath, file, newFileName);
 			message = "Uploaded the file successfully: " + file.getOriginalFilename();
 			return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
 		} catch (Exception e) {

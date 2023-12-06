@@ -2,6 +2,7 @@ package com.thuongmoon.myproject.service;
 
 import java.util.List;
 
+import com.thuongmoon.myproject.dto.CheckoutRequest;
 import com.thuongmoon.myproject.dto.CheckoutResponse;
 import com.thuongmoon.myproject.dto.SeatDto;
 import com.thuongmoon.myproject.dto.TicketInCart;
@@ -19,7 +20,11 @@ public interface CartService {
 	
 	public void addTicketToCart(List<Long> seatStatusIds, Cart userCart);
 	
-	public CheckoutResponse addTicketBooked(List<Long> seatStatusIds, boolean paid, User user);
+	public CheckoutResponse addTicketBooked(CheckoutRequest checkoutRequest, User user);
+	
+	public void createdInvoice(boolean paid, String invoiceId, User user);
+	
+	public boolean isInvoiceExists(String invoiceId);
 	
 	public List<SeatDto> getSeats(Long screeningId, Long auditoriumId);
 	
